@@ -27,6 +27,8 @@ function showResponseStatus(kind,title,detail){
   status.className='response-status '+kind;
   $('#response-title').textContent=title;
   $('#response-detail').textContent=detail;
+  // Keep codes and state out of the recording; expand details for failures.
+  $('#response-details').open=kind==='failure';
 }
 function inspect(value){
   parsed=null;matched=false;
@@ -52,7 +54,7 @@ function inspect(value){
     $('#authorization-code-value').textContent=obj.code||'';
     $('#returned-state').textContent='返された State：'+(obj.state||'（なし）');
     $('#statecheck').className=matched?'state-ok':active?'state-warning':'state-info';
-    $('#statecheck').textContent=matched?'✓ State が一致しました。':active?'State が送信時の値と一致しません。':'送信記録がないか、期限切れ・使用済みのため State は未照合です。同じタブでリクエストを送信するか、URL をコピーしてから認証を試してください。';
+    $('#statecheck').textContent=matched?'✓ State が一致しました。':active?'State が送信時の値と一致しません。':'対応する送信記録がないか、期限切れ・使用済みのため、State は未照合です。State も照合したい場合は、この画面の「認証リクエストを送信」から始めてください。';
     $('#result').textContent=JSON.stringify(obj,null,2);
     if(obj.error){
       showResponseStatus('failure','認証サービスからエラーが返されました',obj.error+(obj.error_description?'：'+obj.error_description:''));
@@ -60,10 +62,14 @@ function inspect(value){
       showResponseStatus('neutral','認証の応答が見つかりません','code・id_token・access_token のいずれかを含む戻り先 URL を入力してください。');
     }else if(active&&!matched){
       showResponseStatus('failure','応答を確認できませんでした','State が一致しないため、このリクエストの成功とは判断できません。');
+    }else if(obj.code){
+      // A direct IdP launch can return a code without a local transaction.
+      // This reports the successful code response, not token validation.
+      showResponseStatus('success','認証に成功しました！','認証サービスから認可コードを受信しました。');
     }else if(matched){
-      showResponseStatus('success','成功しました！','認証サービスから成功応答を受信し、State の一致を確認しました。ID Token の署名などは未検証です。');
+      showResponseStatus('success','成功応答を受信しました','認証サービスから応答を受信しました。');
     }else{
-      showResponseStatus('neutral','成功応答を受信しました','応答の内容を表示しています。State は未照合のため、送信したリクエストとの対応は未確認です。');
+      showResponseStatus('neutral','成功応答を受信しました','認証サービスから応答を受信しました。');
     }
     $('#exchangebox').hidden=!(matched&&obj.code&&!obj.error&&u.origin+u.pathname===new URL(tx.redirect).origin+new URL(tx.redirect).pathname);
     if(obj.id_token){
@@ -80,7 +86,7 @@ function inspect(value){
   $('#response').scrollIntoView({behavior:'smooth'});
 }
 $('#inspect').onclick=()=>inspect($('#responseurl').value);
-$('#clear').onclick=()=>{$('#authorization-code').hidden=true;$('#authorization-code-value').textContent='';$('#returned-state').textContent='';$('#response-status').hidden=true;parsed=null;matched=false;$('#responseurl').value='';$('#result').textContent='まだ応答はありません。';$('#tokens').textContent='';$('#statecheck').textContent='';$('#exchangebox').hidden=true;history.replaceState(null,'',location.pathname);};
+$('#clear').onclick=()=>{$('#response-details').open=false;$('#authorization-code').hidden=true;$('#authorization-code-value').textContent='';$('#returned-state').textContent='';$('#response-status').hidden=true;parsed=null;matched=false;$('#responseurl').value='';$('#result').textContent='まだ応答はありません。';$('#tokens').textContent='';$('#statecheck').textContent='';$('#exchangebox').hidden=true;history.replaceState(null,'',location.pathname);};
 $('#copy-code').onclick=async()=>{
   try{
     if(!parsed?.code)throw Error();

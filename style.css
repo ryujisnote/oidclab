@@ -3,3 +3,12 @@
 .response{margin:0 0 36px;scroll-margin-top:20px}.response-status{border-radius:8px;padding:18px 20px;margin-bottom:20px;border:1px solid #d8e2dc}.response-status strong{display:block;font-size:22px}.response-status p{margin:5px 0 0;font-size:12px}.response-status.success{background:#e8f6ee;color:#106344;border-color:#9bd1b2}.response-status.failure{background:#fff0eb;color:#963d28;border-color:#e6baa9}.response-status.neutral{background:#edf3f7;color:#34566e;border-color:#bdcfdc}#statecheck.state-ok{color:#106344}#statecheck.state-info{color:#526b7d}#statecheck.state-warning{color:#b2472d}
 
 .response-actions{display:flex;gap:8px;flex-wrap:wrap}.returned-state{font:13px/1.8 ui-monospace,SFMono-Regular,monospace;overflow-wrap:anywhere}.authorization-code{background:#eef6f0;border:1px solid #b6d8c4;border-radius:8px;padding:18px;margin:18px 0}.code-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.authorization-code pre{background:#173b31;color:#d8f3e2;border-radius:6px;padding:16px}.authorization-code .help{margin-bottom:0}
+
+/* Large, stable success panel for iPad screen recordings. */
+.response-status.success{padding:36px 24px;text-align:center}
+.response-status.success::before{content:'✓';display:block;width:64px;height:64px;margin:0 auto 18px;border-radius:50%;background:#16805a;color:#fff;font-size:40px;line-height:64px}
+.response-status.success strong{font-size:clamp(28px,4.5vw,48px);line-height:1.4}
+.response-status.success p{font-size:16px;line-height:1.8;margin-top:12px}
+.response-details{border-top:1px solid var(--line);padding-top:16px}
+.response-details summary{cursor:pointer;color:var(--muted);font-size:13px;min-height:44px;line-height:44px}
+.response-details summary:focus-visible{outline:3px solid #5cd2b7;outline-offset:3px}
