@@ -1,0 +1,22 @@
+const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict');
+const nodes=new Map(),data=new Map(),copied=[];const n=id=>{if(!nodes.has(id))nodes.set(id,{value:'',checked:id==='#pkce',hidden:false,textContent:'',className:'',append(){},addEventListener(){},scrollIntoView(){}});return nodes.get(id)};
+const choices=['code','id_token','token'].map(value=>({value,checked:value==='code'}));
+const ctx=vm.createContext({document:{querySelector:n,createElement:()=>n(Symbol()),querySelectorAll:s=>s.includes(':checked')?choices.filter(x=>x.checked):choices},location:{origin:'https://example.org',pathname:'/oidclab/',href:'https://example.org/oidclab/',assign(){}},sessionStorage:{getItem:k=>data.get(k)||null,setItem:(k,v)=>data.set(k,v)},crypto:require('crypto').webcrypto,TextEncoder,TextDecoder,Uint8Array,btoa,atob,URL,URLSearchParams,history:{replaceState(){}},Date,navigator:{clipboard:{writeText:async v=>copied.push(v)}},setTimeout:()=>0,AbortSignal});
+vm.runInContext(fs.readFileSync(__dirname+'/../app.js','utf8'),ctx);
+const inspect=url=>vm.runInContext(`inspect(${JSON.stringify(url)})`,ctx);
+const tx=state=>data.set('oidc-lab-transaction',JSON.stringify({state,redirect:'https://example.org/oidclab/',time:Date.now(),used:false}));
+(async()=>{
+await new Promise(r=>setTimeout(r,20));
+tx('test');inspect('https://example.org/oidclab/?code=demo&state=test');assert.equal(n('#response-title').textContent,'成功しました！');assert.equal(n('#exchangebox').hidden,false);
+tx('expected');inspect('https://example.org/oidclab/?code=demo&state=test');assert(n('#response-title').textContent.includes('確認できません'));assert.equal(n('#exchangebox').hidden,true);
+data.delete('oidc-lab-transaction');inspect('https://example.org/oidclab/?code=demo&state=test');assert.equal(n('#response-status').className,'response-status neutral');assert.equal(n('#exchangebox').hidden,true);
+tx('test');inspect('https://example.org/oidclab/?error=access_denied&state=test');assert.equal(n('#response-status').className,'response-status failure');assert.equal(n('#exchangebox').hidden,true);
+inspect('https://example.org/oidclab/?state=test');assert.equal(n('#response-title').textContent,'認証の応答が見つかりません');
+inspect('https://example.org/oidclab/?code=demo&state=test&state=test');assert.equal(n('#response-title').textContent,'応答を解析できませんでした');
+inspect('https://example.org/oidclab/#code=demo&state=test');assert.equal(n('#response-title').textContent,'成功しました！');
+inspect('not a URL');assert.equal(n('#exchangebox').hidden,true);
+n('#authorize').value='https://issuer.example.org/authorize';n('#client').value='example-client';n('#state').value='test';await n('#copy').onclick();assert.equal(JSON.parse(data.get('oidc-lab-transaction')).state,'test');assert.equal(new URL(copied[0]).searchParams.get('state'),'test');
+inspect('https://example.org/oidclab/?code=demo&state=test');assert.equal(n('#response-title').textContent,'成功しました！');n('#clear').onclick();assert.equal(n('#response-status').hidden,true);
+const html=fs.readFileSync(__dirname+'/../index.html','utf8');assert(html.indexOf('id="response"')<html.indexOf('<h1>'));assert(html.indexOf('id="response"')<html.indexOf('REQUEST BUILDER'));
+console.log('PASS: state=test success; mismatched/unrecorded state protected; errors, missing/duplicate params, fragment, invalid URL; copy records transaction; clear; response-first layout');
+})();
